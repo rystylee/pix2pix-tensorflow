@@ -326,6 +326,8 @@ def load_examples():
 def create_generator(generator_inputs, generator_outputs_channels):
     layers = []
 
+    generator_inputs = tf.identity(generator_inputs, name='generator_inputs')
+
     # encoder_1: [batch, 256, 256, in_channels] => [batch, 128, 128, ngf]
     with tf.variable_scope("encoder_1"):
         output = gen_conv(generator_inputs, a.ngf)
@@ -387,6 +389,8 @@ def create_generator(generator_inputs, generator_outputs_channels):
         output = gen_deconv(rectified, generator_outputs_channels)
         output = tf.tanh(output)
         layers.append(output)
+
+    layers.append(tf.identity(layers[-1], name='generator_outputs'))
 
     return layers[-1]
 
@@ -616,9 +620,14 @@ def main():
             print("loading model from checkpoint")
             checkpoint = tf.train.latest_checkpoint(a.checkpoint)
             restore_saver.restore(sess, checkpoint)
+
             print("exporting model")
             export_saver.export_meta_graph(filename=os.path.join(a.output_dir, "export.meta"))
             export_saver.save(sess, os.path.join(a.output_dir, "export"), write_meta_graph=False)
+
+            # write frozen graph
+            graph_frz = tf.graph_util.convert_variables_to_constants(sess, sess.graph_def, ['generator/generator_outputs'])
+            tf.train.write_graph(graph_frz, a.output_dir, 'graph_frz.pb', as_text=False)
 
         return
 
@@ -705,7 +714,7 @@ def main():
     with tf.name_scope("parameter_count"):
         parameter_count = tf.reduce_sum([tf.reduce_prod(tf.shape(v)) for v in tf.trainable_variables()])
 
-    saver = tf.train.Saver(max_to_keep=1)
+    saver = tf.train.Saver(max_to_keep=20)
 
     logdir = a.output_dir if (a.trace_freq > 0 or a.summary_freq > 0) else None
     sv = tf.train.Supervisor(logdir=logdir, save_summaries_secs=0, saver=None)
