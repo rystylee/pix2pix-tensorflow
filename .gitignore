@@ -3,3 +3,6 @@ tags
 test
 models
 .idea
+
+data/
+result/

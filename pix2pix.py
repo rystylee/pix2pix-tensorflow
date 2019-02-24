@@ -26,7 +26,7 @@ parser.add_argument("--summary_freq", type=int, default=100, help="update summar
 parser.add_argument("--progress_freq", type=int, default=50, help="display progress every progress_freq steps")
 parser.add_argument("--trace_freq", type=int, default=0, help="trace execution every trace_freq steps")
 parser.add_argument("--display_freq", type=int, default=0, help="write current training images every display_freq steps")
-parser.add_argument("--save_freq", type=int, default=5000, help="save model every save_freq steps, 0 to disable")
+parser.add_argument("--save_freq", type=int, default=500, help="save model every save_freq steps, 0 to disable")
 
 parser.add_argument("--separable_conv", action="store_true", help="use separable convolutions in the generator")
 parser.add_argument("--aspect_ratio", type=float, default=1.0, help="aspect ratio of output images (width/height)")
@@ -802,8 +802,15 @@ def main():
                     print("gen_loss_L1", results["gen_loss_L1"])
 
                 if should(a.save_freq):
+                    print('--------------------------------------------------')
                     print("saving model")
                     saver.save(sess, os.path.join(a.output_dir, "model"), global_step=sv.global_step)
+
+                    print("saving frozen graph")
+                    # write frozen graph
+                    graph_frz = tf.graph_util.convert_variables_to_constants(sess, sess.graph_def, ['generator/generator_outputs'])
+                    tf.train.write_graph(graph_frz, a.output_dir, '{}_{}.pb'.format(train_epoch, train_step), as_text=False)
+                    print('--------------------------------------------------')
 
                 if sv.should_stop():
                     break
