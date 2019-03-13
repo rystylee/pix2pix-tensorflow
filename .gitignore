@@ -4,5 +4,7 @@ test
 models
 .idea
 
-data/
-result/
+data/*
+result/*
+
+.vscode/
