@@ -4,7 +4,15 @@ test
 models
 .idea
 
+# Environments
+VENV/*
+
+#
 data/*
 result/*
 
-.vscode/
+# Editor
+.vscode/*
+
+# Keep empty folder
+!.gitkeep
